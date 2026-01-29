@@ -1,0 +1,53 @@
+name: Deploy PHP Application
+
+on:
+  push:
+    branches: [main]
+    paths: ['index.php', 'sql_config.php', '.github/workflows/deploy-app.yaml']
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Create .env file
+      run: |
+        echo "DB_HOST=${{ secrets.DB_HOST }}" > .env
+        echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
+        echo "DB_USER=${{ secrets.DB_USER }}" >> .env
+        echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+    
+    - name: Copy files to server
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: ${{ secrets.VM_HOST }}
+        username: ${{ secrets.VM_USER }}
+        key: ${{ secrets.VM_SSH_KEY }}
+        passphrase: ${{ secrets.VM_SSH_PASSPHRASE }}
+        source: "index.php,sql_config.php,.env"
+        target: ${{ secrets.DES_FOLDER }}
+        overwrite: true
+    
+    - name: Run deployment script and set permissions
+      uses: appleboy/ssh-action@v0.1.5
+      with:
+        host: ${{ secrets.VM_HOST }}
+        username: ${{ secrets.VM_USER }}
+        key: ${{ secrets.VM_SSH_KEY }}
+        passphrase: ${{ secrets.VM_SSH_PASSPHRASE }}
+        script: |
+          # Execute deployment script
+          sudo /usr/local/bin/deploy_app.sh 88360 8006
+          
+          # Set proper permissions
+          sudo chown -R www-data:www-data ${{ secrets.DES_FOLDER }}
+          sudo chmod -R 755 ${{ secrets.DES_FOLDER }}
+          sudo chmod 640 ${{ secrets.DES_FOLDER }}/.env
+          
+          # Restart Apache
+          sudo systemctl restart apache2
+          
+          echo "Application 88360 deployed to port 8006"

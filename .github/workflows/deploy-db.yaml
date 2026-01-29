@@ -1,0 +1,35 @@
+name: Initialize Database
+
+on:
+  push:
+    branches: [main]
+    paths: ['sql/init.sql', '.github/workflows/deploy-db.yaml']
+  workflow_dispatch:
+
+jobs:
+  setup-database:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup MySQL client
+      run: sudo apt update && sudo apt install -y mysql-client
+    
+    - name: Execute SQL scripts
+      env:
+        DB_HOST: ${{ secrets.DB_HOST }}
+        DB_USER: ${{ secrets.DB_USER }}
+        DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        DB_NAME: ${{ secrets.DB_NAME }}
+      run: |
+        echo "Initializing database: $DB_NAME"
+        
+        mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD -e "CREATE DATABASE IF NOT EXISTS $DB_NAME;"
+        
+        mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD $DB_NAME < sql/init.sql
+        
+        mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD $DB_NAME -e "SHOW TABLES; SELECT COUNT(*) as user_count FROM stud88360;"
+        
+        echo "Database $DB_NAME initialized successfully"
