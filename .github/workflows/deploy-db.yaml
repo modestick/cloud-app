@@ -15,7 +15,9 @@ jobs:
       uses: actions/checkout@v4
     
     - name: Setup MySQL client
-      run: sudo apt update && sudo apt install -y mysql-client
+      run: |
+        sudo apt update
+        sudo apt install -y mysql-client
     
     - name: Execute SQL scripts
       env:
@@ -25,11 +27,9 @@ jobs:
         DB_NAME: ${{ secrets.DB_NAME }}
       run: |
         echo "Initializing database: $DB_NAME"
-        
-        mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD -e "CREATE DATABASE IF NOT EXISTS $DB_NAME;"
-        
-        mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD $DB_NAME < sql/init.sql
-        
-        mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD $DB_NAME -e "SHOW TABLES; SELECT COUNT(*) as user_count FROM stud88360;"
-        
+        mysql \
+          --host=$DB_HOST \
+          --user=$DB_USER \
+          --password=$DB_PASSWORD \
+          $DB_NAME < sql/init.sql
         echo "Database $DB_NAME initialized successfully"
