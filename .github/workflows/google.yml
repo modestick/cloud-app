@@ -13,13 +13,6 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Write env file
-      run: |
-        echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
-        echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
-        echo "DB_USER=${{ secrets.DB_USER }}" >> .env
-        echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
-
     - name: Copy artifact to VM
       uses: appleboy/scp-action@v0.1.7
       with:
@@ -28,7 +21,7 @@ jobs:
         key: ${{ secrets.VM_SSH_KEY }}
         passphrase: ${{ secrets.VM_SSH_PASSPHRASE }}
         source: "./"
-        target: "/var/www/vc"
+        target: "/var/www/88360"
         overwrite: true
         rm: true
 
@@ -39,4 +32,4 @@ jobs:
         username: ${{ secrets.VM_USER }}
         key: ${{ secrets.VM_SSH_KEY }}
         passphrase: ${{ secrets.VM_SSH_PASSPHRASE }}
-        script: sudo /usr/local/bin/deploy_app.sh vc 8006
+        script: sudo /usr/local/bin/deploy_app.sh 88360 8006
