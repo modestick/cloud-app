@@ -25,6 +25,38 @@ jobs:
         overwrite: true
         rm: true
 
+    - name: Configure Apache environment for DB
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.VM_HOST }}
+        username: ${{ secrets.VM_USER }}
+        key: ${{ secrets.VM_SSH_KEY }}
+        passphrase: ${{ secrets.VM_SSH_PASSPHRASE }}
+        script: |
+          echo "Adding DB environment variables to Apache..."
+          
+          # Create or append SetEnv directives to Apache config
+          CONFIG_FILE="/etc/apache2/sites-available/88360.conf"
+          
+          # Check if SetEnv already exists
+          if ! sudo grep -q "SetEnv DB_HOST" "$CONFIG_FILE"; then
+            # Add SetEnv before </VirtualHost>
+            sudo sed -i '/<\/VirtualHost>/i \
+            \ \ \ \ # Database environment variables\n\
+            \ \ \ \ SetEnv DB_HOST "34.58.246.93"\n\
+            \ \ \ \ SetEnv DB_NAME "stud88360"\n\
+            \ \ \ \ SetEnv DB_USER "stud"\n\
+            \ \ \ \ SetEnv DB_PASSWORD "Uwb123!!"' \
+            "$CONFIG_FILE"
+            echo "✅ DB environment variables added to Apache config"
+          else
+            echo "⚠️ DB environment variables already exist in Apache config"
+          fi
+          
+          # Reload Apache to apply changes
+          sudo systemctl reload apache2
+          echo "✅ Apache reloaded successfully"
+
     - name: Run remote deploy script
       uses: appleboy/ssh-action@v1.0.3
       with:
@@ -33,3 +65,23 @@ jobs:
         key: ${{ secrets.VM_SSH_KEY }}
         passphrase: ${{ secrets.VM_SSH_PASSPHRASE }}
         script: sudo /usr/local/bin/deploy_app.sh 88360 8006
+
+    - name: Verify deployment
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.VM_HOST }}
+        username: ${{ secrets.VM_USER }}
+        key: ${{ secrets.VM_SSH_KEY }}
+        passphrase: ${{ secrets.VM_SSH_PASSPHRASE }}
+        script: |
+          echo "=== Deployment Verification ==="
+          echo "1. Checking if app directory exists..."
+          ls -la /var/www/88360/
+          echo ""
+          echo "2. Checking Apache configuration..."
+          sudo grep -A4 "SetEnv DB_" /etc/apache2/sites-available/88360.conf || echo "No DB env vars found"
+          echo ""
+          echo "3. Checking Apache status on port 8006..."
+          sudo netstat -tlnp | grep :8006 || echo "Port 8006 not listening"
+          echo ""
+          echo "✅ Deployment completed for student 88360 on port 8006"
