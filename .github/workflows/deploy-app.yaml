@@ -20,7 +20,7 @@ jobs:
         echo "DB_USER=${{ secrets.DB_USER }}" >> .env
         echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
     
-    - name: Copy files to server
+    - name: Copy files to server temp location
       uses: appleboy/scp-action@v0.1.7
       with:
         host: ${{ secrets.VM_HOST }}
@@ -28,10 +28,10 @@ jobs:
         key: ${{ secrets.VM_SSH_KEY }}
         passphrase: ${{ secrets.VM_SSH_PASSPHRASE }}
         source: "index.php,sql_config.php,.env"
-        target: ${{ secrets.DES_FOLDER }}
+        target: "/tmp/app-88360/"
         overwrite: true
     
-    - name: Run deployment script and set permissions
+    - name: Deploy to web directory
       uses: appleboy/ssh-action@v0.1.5
       with:
         host: ${{ secrets.VM_HOST }}
@@ -42,6 +42,17 @@ jobs:
           # Execute deployment script
           sudo /usr/local/bin/deploy_app.sh 88360 8006
           
+          # Create application directory
+          sudo mkdir -p ${{ secrets.DES_FOLDER }}
+          
+          # Move files from temp to web directory
+          sudo cp /tmp/app-88360/index.php ${{ secrets.DES_FOLDER }}
+          sudo cp /tmp/app-88360/sql_config.php ${{ secrets.DES_FOLDER }}
+          sudo cp /tmp/app-88360/.env ${{ secrets.DES_FOLDER }}
+          
+          # Clean up temp files
+          rm -rf /tmp/app-88360
+          
           # Set proper permissions
           sudo chown -R www-data:www-data ${{ secrets.DES_FOLDER }}
           sudo chmod -R 755 ${{ secrets.DES_FOLDER }}
@@ -50,4 +61,4 @@ jobs:
           # Restart Apache
           sudo systemctl restart apache2
           
-          echo "Application 88360 deployed to port 8006"
+          echo "Application 88360 deployed to ${{ secrets.DES_FOLDER }} on port 8006"
