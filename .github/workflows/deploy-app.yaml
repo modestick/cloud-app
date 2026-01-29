@@ -50,7 +50,7 @@ jobs:
           sudo cp /tmp/app-88360/sql_config.php ${{ secrets.DES_FOLDER }}
           sudo cp /tmp/app-88360/.env ${{ secrets.DES_FOLDER }}
           
-          # Clean up temp files
+          # Clean temp files
           rm -rf /tmp/app-88360
           
           # Set proper permissions
